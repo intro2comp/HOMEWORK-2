@@ -1,4 +1,4 @@
-#include <pthread.h> // pthread_t, pthread_create, pthread_join
+#include <pthread.h> // pthread_t, pthread_create, pthread_exit, pthread_join
 #include <stdlib.h>  // malloc, free
 #include <stdio.h>   // printf
 
@@ -21,16 +21,12 @@ struct thread_fib_args {
 
 void *thread_calc_fib(void *arg_struct)
 {
-  printf("Start calc...\n");
-
   struct thread_fib_args *args = arg_struct;
 
   for (int i = 0; i < args->n; i++)
     array_fib(i, args->arr);
 
-  printf("End calc...\n");
-
-  return NULL;
+  pthread_exit(0);
 }
 
 
@@ -40,18 +36,14 @@ void *thread_print_fib(void *arg_struct)
 
   pthread_t child;
 
-  pthread_create(&child, NULL, thread_calc_fib, (void *)&args);
+  pthread_create(&child, NULL, thread_calc_fib, args);
 
   pthread_join(child, NULL);
-
-  printf("Start print...\n");
 
   for (int i = 0; i < args->n; i++)
     printf("%d: %d\n", i + 1, args->arr[i]);
 
-  printf("End print...\n");
-
-  return NULL;
+  pthread_exit(0);
 }
 /* End thread wrappers */
 
@@ -65,23 +57,18 @@ int main(int argc, char *argv[])
 
   const int count = atoi(argv[1]);
 
-  int *results = malloc(sizeof(int) * count);
-
   struct thread_fib_args parent_args;
 
   parent_args.n = count;
-  parent_args.arr = results;
-
-  for (int i = 0; i < count; i++)
-    results[i] = -1;
+  parent_args.arr = malloc(sizeof(int) * count);
 
   pthread_t parent;
 
-  pthread_create(&parent, NULL, thread_print_fib, (void *)&parent_args);
+  pthread_create(&parent, NULL, thread_print_fib, &parent_args);
 
   pthread_join(parent, NULL);
 
-  free(results);
+  free(parent_args.arr);
 
   return 0;
 }
